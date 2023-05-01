@@ -492,6 +492,19 @@ class NestedUserFunctionVariable(BaseUserFunctionVariable):
             codegen(self.fn_name)
         codegen.extend_output([create_instruction("MAKE_FUNCTION", arg=flags)])
 
+        # When graph breaks happen, the global variables of resumed function
+        # come from the outermost function which may not have globals needed
+        # by this nested function, we have to add these missing globals.
+        root_globals = codegen.tx.output.root_globals
+        for key in self.code.value.co_names:
+            if key not in self.f_globals:
+                continue
+            if key in root_globals:
+                if not (key.startswith("__") and key.endswith("__")):
+                    assert root_globals[key] == self.f_globals[key]
+            else:
+                root_globals[key] = self.f_globals[key]
+
         if self.wraps_source:
             codegen.load_import_from("functools", "wraps")
             codegen(self.wraps_source)
