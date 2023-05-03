@@ -14,7 +14,7 @@ MessageFormatterType = Callable[..., str]
 
 @_beartype.beartype
 def format_message_in_text(fn: Callable, *args: Any, **kwargs: Any) -> str:
-    return f"{formatter.display_name(fn)}"
+    return f"{formatter.display_name(fn)}. "
 
 
 @_beartype.beartype
@@ -132,7 +132,8 @@ def diagnose_call(
                     return return_values
                 except Exception as e:
                     # Record exception.
-                    diag.level = exception_report_level
+                    diag.level = infra.levels.ERROR
+                    diag.message += f"Raised from:\n    {type(e).__name__}: {e}"
                     diag.with_source_exception(e)
                     additional_messages.append(format_exception_in_markdown(e))
                 finally:
