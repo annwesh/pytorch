@@ -3869,7 +3869,11 @@ class StorageBox(MutableBox):
         """
         Called on buffers we expect to be forced to realize later.
         """
-        if isinstance(self.data, (Pointwise, Reduction)) and self.num_reads() > 1:
+        if (
+            isinstance(self.data, (Pointwise, Reduction))
+            and self.num_reads() > 1
+            and self.is_Pointwise_non_scalar_tensor_num_reads_larger_than_one()
+        ):
             self.realize()
 
     def has_exceeded_max_reads(self):
@@ -3922,6 +3926,15 @@ class StorageBox(MutableBox):
                 data=data,
             ).get_read_writes()
         return len(read_writes.reads)
+
+    @cache_on_self
+    def is_Pointwise_non_scalar_tensor_num_reads_larger_than_one(self):
+        # Skip the check for non Pointwise instances
+        return (
+            (sum(read.index != 0 for read in self.data.get_reads()) > 1)
+            if isinstance(self.data, Pointwise)
+            else True
+        )
 
 
 class InterpreterShim(torch.fx.Interpreter):
